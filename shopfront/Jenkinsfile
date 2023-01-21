@@ -1,5 +1,9 @@
 pipeline{
     agent any
+    environment{
+        registry = "rohanrustagi18/shopfront"
+        DOCKERHUB_CREDENTIALS=credentials('docker')
+    }
 
     stages{
         stage('Code Checkout'){
@@ -12,9 +16,36 @@ pipeline{
                 sh "pwd"
                 dir("${env.WORKSPACE}/shopfront"){
                     sh "pwd"
-                    sh 'mvn clean package'
+                    sh 'mvn clean install'
                 }
             }
         }
+        stage('Building Docker Image'){
+            steps{
+                sh "pwd"
+                dir("${env.WORKSPACE}/shopfront"){
+                    script{
+                        customImage = docker.build registry + ":$BUILD_NUMBER"
+                  }
+                    
+                }
+        }
+      }
+      stage('deploy to docker hub'){
+          steps{
+              script {
+                  withCredentials([string(credentialsId: 'dockerd', variable: 'docker')]) {
+                      sh 'docker login -u rohanrustagi18 -p ${docker}'
+                      customImage.push()
+                }
+                  
+            }
+          
+            
+            
+              
+              
+          }
+      }
     }
 }
